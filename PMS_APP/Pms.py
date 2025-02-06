@@ -6,8 +6,9 @@ import pyautogui
 from AppOpener.check import app_names
 
 from PyQt6.QtCore import QThread, pyqtSignal
-from PyQt6.QtWidgets import QMainWindow, QApplication
-from PyQt6 import QtGui
+from PyQt6.QtGui import QColor
+from PyQt6.QtWidgets import QMainWindow, QApplication, QTableWidgetItem
+from PyQt6 import QtGui, QtWidgets
 from pywinauto import Desktop, Application
 
 from PMS_APP.Pms_ui import Ui_MainWindow
@@ -42,17 +43,15 @@ def load_data_galaxybook():
         print(f'Load data error: {e}')
 
 #Fucntion check uninstall/ install success
-def check_success(app_name, app_status, handle):
+def check_success(app_name, app_status):
     data_galaxybook = load_data_galaxybook()
     if len(data_galaxybook[0]) == len(data_galaxybook[1]):
         for app, status in zip(data_galaxybook[0], data_galaxybook[1]):
             if app == app_name:
                 if status != app_status:
-                    print(f'{app_name} {handle} success')
+                    return 'PASS'
                 else:
-                    print(f'{app_name} {handle} Fail')
-
-
+                    return 'FAIL'
 
 #Class threads
 class Worker(QThread):
@@ -81,6 +80,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.threads = []
         self.app_name_list = []
         self.app_status_list = []
+        self.current_index = 0
 
     def init_ui(self):
         global tableView, model
@@ -89,18 +89,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         tableView = self.ui.tableResult
         self.ui.uninstallBtn.clicked.connect(self.on_btn_uninstall_clicked)
         self.ui.installBtn.clicked.connect(self.on_btn_install_clicked)
+        self.ui.stopBtn.clicked.connect(self.on_btn_stop_clicked)
+        self.ui.stopBtn.setEnabled(False)
 
         num_col = 3
         model = QtGui.QStandardItemModel(0, num_col)
-        model.setHorizontalHeaderLabels(['App List', 'Uninstall', 'Install'])
+        model.setHorizontalHeaderLabels(['App name', 'Uninstall', 'Install'])
         header = tableView.horizontalHeader()
-        header.setDefaultSectionSize(147)
-
-        load_data = load_data_galaxybook()
-        app_list = load_data[0]
-        for index, app_name in enumerate(app_list):
-            item = QtGui.QStandardItem(app_name)
-            model.setItem(index, 0, item)
+        header.setDefaultSectionSize(152)
 
         tableView.setModel(model)
 
@@ -131,7 +127,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             sleep(20)
             close_app('Microsoft Store')
             # app_and_services_text = click_object(target_window, "Apps and services", "AppsAndServices", "Text")
-            # check_success(app_name, 'Install', 'Reinstall')
+            result = check_success(app_name, 'Install')
+            return result
         except Exception as e:
             print(f'reinstall app error: {app_name, e}')
 
@@ -155,100 +152,196 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             sleep(5)
 
             # check_success(app_name, 'Open', 'uninstall')
+            result = check_success(app_name, 'Open')
+            return result
             # print(target_window.print_control_identifiers())
         except Exception as e:
             print(f"Uninstall app error: {e}")
 
+    # Function show notifications
+    def show_notification(self, message):
+        msg = QtWidgets.QMessageBox()
+        msg.setWindowTitle("Thông báo")
+        msg.setText(message)
+        msg.setStyleSheet("""
+                    QMessageBox {
+                        background-color: #f0f0f0;
+                        font-size: 14px;
+                        min-width: 500px;
+                        min-height: 150px;
+                    }
+                    QMessageBox QLabel {
+                        color: #2c3e50;
+                    }
+                    QMessageBox QPushButton {
+                        background-color: #3498db;
+                        color: #ffffff;
+                        border-radius: 5px;
+                        padding: 5px 10px;
+                    }
+                    QMessageBox QPushButton:hover {
+                        background-color: #2980b9;
+                    }
+                """)
+        msg.exec()
+
     # Function click uninstall
     def on_btn_uninstall_clicked(self):
+        self.clear_table_data()
         self.app_name_list = []
         self.app_status_list = []
         self.current_index = 0
-        self.ui.installBtn.setEnabled(False)
+        self.ui.uninstallBtn.setEnabled(False)
+        self.ui.stopBtn.setEnabled(True)
         data_galaxybook = load_data_galaxybook()
         if len(data_galaxybook[0]) == len(data_galaxybook[1]):
             for app_name, status in zip(data_galaxybook[0], data_galaxybook[1]):
                 if status == 'Open':
                     self.app_name_list.append(app_name)
                     self.app_status_list.append(status)
-        self.next_app('Uninstall')
+        if len(self.app_name_list) == 0:
+            self.show_notification('All app has been uninstalled!')
+        else:
+            self.next_app('Uninstall')
 
     # Function click install
     def on_btn_install_clicked(self):
+        self.clear_table_data()
         self.app_name_list = []
         self.app_status_list = []
         self.current_index = 0
-        self.ui.uninstallBtn.setEnabled(False)
+        self.ui.installBtn.setEnabled(False)
+        self.ui.stopBtn.setEnabled(True)
         data_galaxybook = load_data_galaxybook()
         if len(data_galaxybook[0]) == len(data_galaxybook[1]):
             for app_name, status in zip(data_galaxybook[0], data_galaxybook[1]):
                 if status == 'Install':
                     self.app_name_list.append(app_name)
                     self.app_status_list.append(status)
-        self.next_app('Install')
+        if len(self.app_name_list) == 0:
+            self.show_notification('All app has been installed!')
+        else:
+            self.next_app('Install')
+
+    # Function clear table data
+    def clear_table_data(self):
+        global model
+        for row in range(model.rowCount()):
+            model.setData(model.index(row, 1), '')
+            model.setData(model.index(row, 2), '')
+
     # Function init test case result
-    def init_result(self, row_index):
+    def init_uninstall_result(self):
         global window, tableView
+        app_name = self.app_name_list[self.current_index]
+        item = QtGui.QStandardItem(app_name)
+        model.setItem(self.current_index, 0, item)
+
         item = QtGui.QStandardItem('Running')
-        model.setItem(row_index, 1, item)
+        model.setItem(self.current_index, 1, item)
+        tableView.setModel(model)
+        tableView.viewport().update()
+
+    # Function init test case result
+    def init_install_result(self):
+        print('init ínstall')
+        global window, tableView
+        app_name = self.app_name_list[self.current_index]
+        item = QtGui.QStandardItem(app_name)
+        model.setItem(self.current_index, 0, item)
+
+        item = QtGui.QStandardItem('Running')
+        item.setForeground(QtGui.QBrush(QtGui.QColor("blue")))
+        model.setItem(self.current_index, 2, item)
+
         tableView.setModel(model)
         tableView.viewport().update()
 
     # Function run next app
-    def next_app(self, handle_app):
+    def next_app(self, handle_method):
         if self.current_index < len(self.app_name_list):
             try:
-                # Run thread init test case in table
-                thread = Worker(target=lambda: self.init_result(self.current_index))
-                self.threads.append(thread)
-                # Run thread handle
-                thread.finished.connect(self.start_handle_app)
-                thread.start()
-                print(f"Started init_result thread for app name: {self.app_name_list[self.current_index]}")
+                if handle_method == 'Install':
+                    # Run thread init test case in table
+                    thread = Worker(target=self.init_install_result)
+                    self.threads.append(thread)
+                    # Run thread handle
+                    thread.start()
+                    thread.finished.connect(lambda: self.start_handle_method(handle_method))
+                    print(f"Started init_install_result thread for app name: {self.app_name_list[self.current_index]}")
+                else:
+                    # Run thread init test case in table
+                    thread = Worker(target=self.init_uninstall_result)
+                    self.threads.append(thread)
+                    # Run thread handle
+                    thread.finished.connect(lambda: self.start_handle_method(handle_method))
+                    thread.start()
+                    print(f"Started init_uninstall_result thread for app name: {self.app_name_list[self.current_index]}")
             except Exception as e:
                 print(f'Error click: {e}')
 
     # Function handle install app
-    def start_handle_app(self):
+    def start_handle_method(self, handle_method):
+        print('handle')
         if self.current_index >= len(self.threads) or not self.threads[self.current_index]._is_running:
             return
         app_name = self.app_name_list[self.current_index]
         app_status = self.app_status_list[self.current_index]
         try:
             # run thread handle_result
-            thread = Worker(target=lambda: self.handle_result(app_name, 'Install'))
+            thread = Worker(target=lambda: self.handle_result(app_name, handle_method))
             self.threads.append(thread)
-            thread.finished.connect(self.on_thread_finished)
+            thread.finished.connect(lambda: self.on_thread_finished(handle_method))
             thread.start()
             print(f"Started handle_result thread for app name: {self.app_name_list[self.current_index]}")
         except Exception as e:
             print(f'Error handle: {e}')
 
+    # Function reload row data
+    def reload_row_data(self, result, row_index, col_index):
+        global window, tableView
+        item = QtGui.QStandardItem(f'{result}')
+        if result.lower() == 'pass':
+            item.setForeground(QtGui.QBrush(QtGui.QColor("green")))
+        elif result.lower() == 'fail':
+            item.setForeground(QtGui.QBrush(QtGui.QColor("red")))
+        model.setItem(row_index, col_index, item)
+        tableView.setModel(model)
+
     # Function handle result
     def handle_result(self, app_name, handle_method):
         try:
             if handle_method == 'Install':
-                self.reinstall_app(app_name)
+                result = self.reinstall_app(app_name)
+                self.reload_row_data(result, self.current_index, 2)
                 print(f"install app finish: {app_name}")
             else:
-                self.uninstall_app(app_name)
-                print(f"install app finish: {app_name}")
+                result = self.uninstall_app(app_name)
+                self.reload_row_data(result, self.current_index, 1)
+                print(f"uninstall app finish: {app_name}")
         except Exception as e:
             print(f'Lỗi xử lý: {e}')
 
     # Function finish handle result
-    def on_thread_finished(self):
+    def on_thread_finished(self, handle_method):
         print(f"Thread for testcase {self.app_name_list[self.current_index]} finished")
         print('current index: ', self.current_index)
         self.current_index += 1
         if self.current_index < len(self.app_name_list):
-            self.next_app()
+            self.next_app(handle_method)
         else:
-            self.ui.uninstallBtn.setEnabled(True)
-            self.ui.stopBtn.setEnabled(False)
+            if handle_method == 'Install':
+                self.show_notification('Successfully installed all apps!')
+                self.ui.installBtn.setEnabled(True)
+                self.ui.stopBtn.setEnabled(False)
+            else:
+                self.show_notification('Successfully uninstalled all apps!')
+                self.ui.uninstallBtn.setEnabled(True)
+                self.ui.stopBtn.setEnabled(False)
 
     # Function stop all threads
     def stop_all_threads(self):
+        print('stop')
         for thread in self.threads:
             thread.stop()
         self.threads.clear()
@@ -259,6 +352,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setStyleSheet("""QPushButton { background-color: grey; color: white;}
+                      QTableView { background-color: white; color: black;}
+                      """)
     main_window = MainWindow()
     main_window.show()
     sys.exit(app.exec())

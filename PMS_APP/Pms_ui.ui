@@ -10,6 +10,13 @@
     <height>750</height>
    </rect>
   </property>
+  <property name="font">
+   <font>
+    <family>Arial</family>
+    <pointsize>12</pointsize>
+    <bold>true</bold>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>System Power Management Uninstall/ Install App</string>
   </property>
@@ -19,38 +26,59 @@
      <rect>
       <x>40</x>
       <y>50</y>
-      <width>91</width>
+      <width>101</width>
       <height>41</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>10</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
     <property name="text">
-     <string>Uninstall</string>
+     <string>UNINSTALL</string>
     </property>
    </widget>
    <widget class="QPushButton" name="installBtn">
     <property name="geometry">
      <rect>
-      <x>160</x>
+      <x>210</x>
       <y>50</y>
-      <width>91</width>
+      <width>121</width>
       <height>41</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>10</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
     <property name="text">
-     <string>Install</string>
+     <string>INSTALL</string>
     </property>
    </widget>
    <widget class="QPushButton" name="stopBtn">
     <property name="geometry">
      <rect>
-      <x>410</x>
+      <x>400</x>
       <y>50</y>
-      <width>91</width>
+      <width>101</width>
       <height>41</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>10</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
     <property name="text">
-     <string>Stop</string>
+     <string>STOP</string>
     </property>
    </widget>
    <widget class="QTableView" name="tableResult">
@@ -62,18 +90,12 @@
       <height>581</height>
      </rect>
     </property>
-   </widget>
-   <widget class="QPushButton" name="reloadBtn">
-    <property name="geometry">
-     <rect>
-      <x>290</x>
-      <y>50</y>
-      <width>91</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Reload</string>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>10</pointsize>
+      <bold>false</bold>
+     </font>
     </property>
    </widget>
   </widget>
